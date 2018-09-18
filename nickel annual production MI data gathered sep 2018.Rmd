@@ -1,0 +1,66 @@
+---
+title: "Nickel production MI data Sep 2017"
+
+
+
+---
+
+Let's get the data. Just doing Mines as Asset Type. 
+
+ 
+
+```{r}
+library(tidyverse)
+
+nickel_raw <- read_csv("C:/Users/mmccrae/Desktop/nickel formated R annual production.csv")
+glimpse(nickel_raw)
+
+View(nickel_raw)
+
+
+
+```
+
+
+
+
+Let's look at top producers in various production types in 2017 annual. 
+
+
+```{r}
+
+nickel_top_2017_annual_production_types <- nickel_raw %>% filter(Commodity=="Nickel") %>% select(Property,ProductionType,Annual2017) %>% filter(!is.na(Annual2017)) %>% arrange(Property, desc(Annual2017))
+nickel_top_2017_annual_production_types
+
+```
+
+K. Let's facet and bar chart. 
+
+```{r}
+
+ggplot(nickel_top_2017_annual_production_types, aes(Property, Annual2017))+
+  geom_point()+
+  geom_segment(aes(x=Property, xend=Property, y=0, yend=Annual2017))+
+  coord_flip()+
+  facet_grid(ProductionType~., scales = "free")
+
+```
+
+
+Let's do straigt up lollipop. 
+
+```{r}
+
+ggplot(nickel_top_2017_annual_production_types, aes(reorder(Property,Annual2017), Annual2017))+
+  geom_point(aes(color=ProductionType))+
+  geom_segment(aes(x=Property, xend=Property, y=0, yend=Annual2017,color=ProductionType))+
+  coord_flip() +
+  theme_minimal()
+
+```
+
+
+
+
+
+

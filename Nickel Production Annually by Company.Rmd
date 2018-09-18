@@ -1,0 +1,185 @@
+---
+title: "Nickel Production by Top Companies"
+
+
+
+---
+
+ 
+ 
+ Let's get raw nickel production and company ownership. 
+
+```{r}
+library(tidyverse)
+
+more_raw_nickel <- read_csv("C:/Users/mmccrae/Desktop/nickel mine and mine complext TAKE TWO DOWNLOAD Sep 2018 MI download.csv")
+glimpse(more_raw_nickel)
+
+
+
+propertyownership <- read_csv("C:/Users/mmccrae/Desktop/propertyownership.csv")
+glimpse(propertyownership)
+View(propertyownership)
+
+```
+
+
+
+
+
+
+
+Let's just sort by annual and then gather
+
+
+
+```{r}
+
+
+
+gather_nickel_production <- more_raw_nickel %>% select(-starts_with("Q")) %>% gather(key="textyear",value="production", 7:34) %>% mutate(year=parse_number(textyear))
+
+glimpse(gather_nickel_production)
+str(gather_nickel_production)
+
+```
+
+
+
+Let's join tibbles
+
+```{r}
+
+#str(propertyownership)
+
+property_production <- left_join(gather_nickel_production,propertyownership)
+
+glimpse(property_production)
+
+```
+
+
+Let's add percentage of production entitled
+
+```{r}
+
+property_production$production <- as.numeric(property_production$production)
+
+property_production_pct <- property_production %>% mutate(production_percent=(production*(InterestPct*.01)))
+
+```
+
+
+
+
+Let's look at top 30 producing projects. 
+
+
+```{r}
+
+top_nickel_projects <- property_production_pct %>% filter(Commodity=="Nickel") %>% filter(year==2017)%>% top_n(60, production) %>% select(-PropertyID, -CompanyID,-CommoditySymbol,-textyear) 
+View(top_nickel_projects)
+glimpse(top_nickel_projects)
+
+```
+
+
+What are the largest companies by 2017 production per production interest?
+
+```{r}
+
+
+
+big_company <- top_nickel_projects %>% group_by(Company) %>% summarise(n=sum(production_percent)) %>% ungroup() %>% arrange(desc(n))
+
+big_company
+
+```
+
+
+
+
+Try a stacked bar chart
+
+```{r}
+
+library(viridis)
+
+top_nickel_projects$Company=factor(top_nickel_projects$Company, levels=c("Terrafame","Lundin Mining","Western Areas","Sumitomo","South32","Anglo American","BHP Billiton","Glencore","Norilsk Nickel","Vale"))
+
+ggplot(top_nickel_projects, aes(x=Company, y=production_percent, fill=Property))+
+  geom_bar(stat="identity",na.rm = TRUE)+
+ # geom_text(aes(label=Property),check_overlap = TRUE)+
+  coord_flip()+
+  guides(fill=FALSE) +
+  scale_fill_viridis(discrete=TRUE) + theme_bw()
+  
+
+```
+
+
+
+Get rid of NA
+
+
+
+Try a stacked bar chart
+
+```{r}
+
+library(viridis)
+
+
+
+ggplot(data=subset(top_nickel_projects, Company  %in% c("Terrafame","Lundin Mining","Western Areas","Sumitomo","South32","Anglo American","BHP Billiton","Glencore","Norilsk Nickel","Vale")), aes(x=Company, y=production_percent, fill=Property))+
+  geom_bar(stat="identity",na.rm = TRUE)+
+  geom_text(aes(label=Property),position = position_stack(vjust = .5), size = 2, color = "black")+
+  coord_flip()+
+  guides(fill=FALSE) +
+  scale_fill_viridis(discrete=TRUE) + theme_bw()
+  
+
+
+
+
+```
+
+Try a lighter template, do aesthetics. 
+
+
+
+```{r}
+
+library(viridis)
+library(RColorBrewer)
+
+windowsFonts(`Zilla Slab` = windowsFont("Zilla Slab"))
+windowsFonts(Montserrat = windowsFont("Montserrat"))
+
+
+
+n <- ggplot(data=subset(top_nickel_projects, Company  %in% c("Terrafame","Lundin Mining","Western Areas","Sumitomo","South32","Anglo American","BHP Billiton","Glencore","Norilsk Nickel","Vale")), aes(x=Company, y=production_percent, fill=Property))+
+  geom_bar(stat="identity",na.rm = TRUE)+
+  geom_text(aes(label=Property),position = position_stack(vjust = .3), size = 1.5, color = "black")+
+  coord_flip()+
+  guides(fill=FALSE) +
+  scale_fill_viridis(discrete=TRUE, alpha = .4, option="cividis") + 
+  theme_minimal(base_size=8, base_family="Montserrat")+
+    labs(title="Top Nickel Miners Ranked by 2017 Production", subtitle="In kilotonnes", caption = "Data from Mining Intelligence" )+
+  theme(plot.title = element_text(size = rel(2), family="Zilla Slab"), panel.grid.minor = element_blank()) +
+  ylab("") +
+  xlab("")
+
+n
+
+ggsave(n, filename = "nickel_top_miners_2017_annual_ver2.png", dpi = 300, type = "cairo", width = 6, height = 4, units = "in")
+  
+
+
+
+
+```
+
+
+
+

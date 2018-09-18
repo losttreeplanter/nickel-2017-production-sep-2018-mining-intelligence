@@ -1,0 +1,153 @@
+---
+title: "Nickel Production Asset Type is Mines and Mine Complex"
+
+
+
+---
+
+
+Ran data Sep 2018
+
+
+ 
+
+```{r}
+library(tidyverse)
+
+more_raw_nickel <- read_csv("C:/Users/mmccrae/Desktop/nickel mine and mine complext TAKE TWO DOWNLOAD Sep 2018 MI download.csv")
+glimpse(more_raw_nickel)
+
+
+
+```
+
+
+
+Sort data.
+
+
+
+```{r}
+
+nickel_mine_mine_complex <- more_raw_nickel %>% filter(Commodity=="Nickel") %>% select(Property,ProductionType,Annual2017) %>% filter(!is.na(Annual2017)) %>% arrange(Property, desc(Annual2017))
+nickel_mine_mine_complex
+
+```
+
+
+
+Let's plot
+
+
+```{r}
+
+
+ggplot(nickel_mine_mine_complex, aes(reorder(Property,Annual2017), Annual2017))+
+  geom_point(aes(color=ProductionType))+
+  geom_segment(aes(x=Property, xend=Property, y=0, yend=Annual2017,color=ProductionType))+
+  coord_flip() +
+  theme_minimal()
+
+```
+
+
+Let's add ownership properties and join
+
+
+```{r}
+
+propertyownership <- read_csv("C:/Users/mmccrae/Desktop/propertyownership.csv")
+glimpse(propertyownership)
+View(propertyownership)
+
+```
+
+
+
+Let's join tibbles to make owernship by property. 
+
+```{r}
+
+library(naniar)
+
+
+nickel_mine_mine_complex <- nickel_mine_mine_complex %>% mutate(Company=(0*Annual2017)) %>% replace_with_na(replace = list(Company = 0))
+
+
+ownership_nickel_2017production <-left_join(nickel_mine_mine_complex,propertyownership, by="Property")
+ownership_nickel_2017production
+
+write.csv(ownership_nickel_2017production, "ownership_nickel_2017production.csv")
+
+```
+
+
+Let's load new ownership after concatenate
+
+```{r}
+
+ownership_nickel_2017production_concatenate <- read_csv("ownership_nickel_2017production_concatenate.csv")
+glimpse(ownership_nickel_2017production_concatenate)
+
+```
+
+
+Let's plot again with the new names. 
+
+```{r}
+
+
+ggplot(ownership_nickel_2017production_concatenate, aes(reorder(CompanyProperty,Annual2017), Annual2017))+
+  geom_point(aes(color=ProductionType), size=4)+
+  geom_segment(aes(x=CompanyProperty, xend=CompanyProperty, y=0, yend=Annual2017,color=ProductionType), size=2)+
+  coord_flip() +
+  theme_minimal()
+
+```
+
+
+
+We can also just group by company. 
+
+
+```{r}
+
+ownership_nickel_2017production_concatenate$Company.y <- factor(ownership_nickel_2017production_concatenate$Company.y, levels=c("Vale","Norilsk Nickel","Glencore","BHP Billiton", "South32"))
+
+ownership_nickel_2017production_concatenate$Company.y <- fct_rev(ownership_nickel_2017production_concatenate$Company.y)
+
+ownership_nickel_2017production_concatenate %>% filter(Annual2017>40) %>% 
+
+ggplot(aes(Company.y, Annual2017, fill=Property))+
+  geom_col()+
+  coord_flip() +
+  theme_minimal()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
